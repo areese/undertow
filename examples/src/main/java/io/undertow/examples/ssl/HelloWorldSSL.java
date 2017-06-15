@@ -40,10 +40,14 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 
 /**
- * @author Stuart Douglas
+ * @author Allen Reese
+ *  java -DtrustStorePath=`pwd`/keystore -DkeyStorePath=`pwd`/keystore     -cp undertow-examples.jar  io.undertow.examples.ssl.HelloWorldSSL
+ *  Not sure why the default javax keystore/truststore config doesn't work for me.
  */
 @UndertowExample("Hello World SSL")
 public class HelloWorldSSL {
+
+    private static final char[] keystorePassword = System.getProperty("keyStorePassword", "abcdefghi").toCharArray();
 
     public static void main(final String[] args) throws Exception {
         final SSLContext sslContext = SSLContext.getInstance("TLSv1.2");
@@ -65,7 +69,7 @@ public class HelloWorldSSL {
         cipherSuites.add("TLS_RSA_WITH_AES_256_CBC_SHA");
 
         Undertow server = Undertow.builder().addHttpsListener(8443, "0.0.0.0", sslContext)
-                        .setServerOption(UndertowOptions.SSL_USER_CIPHER_SUITES_ORDER, true)
+                        .setServerOption(UndertowOptions.SSL_USER_CIPHER_SUITES_ORDER, Boolean.TRUE)
                         .setServerOption(Options.SSL_ENABLED_CIPHER_SUITES, Sequence.of(cipherSuites))
                         .setHandler(new HttpHandler() {
                             @Override
@@ -101,14 +105,14 @@ public class HelloWorldSSL {
         if (Paths.get(jksFilePath).isAbsolute()) {
             // Can not cover this branch in unit test. Can not refer any files by absolute paths
             try (InputStream jksFileInputStream = new FileInputStream(jksFilePath)) {
-                keyStore.load(jksFileInputStream, "abcdefghi".toCharArray());
+                keyStore.load(jksFileInputStream, keystorePassword);
                 return keyStore;
             }
         }
         /// CLOVER:ON
 
         try (InputStream jksFileInputStream = Resources.getResource(jksFilePath).openStream()) {
-            keyStore.load(jksFileInputStream, "abcdefghi".toCharArray());
+            keyStore.load(jksFileInputStream, keystorePassword);
             return keyStore;
         }
     }
@@ -117,7 +121,7 @@ public class HelloWorldSSL {
         final KeyStore keystore = getKeyStore(sslKeyStore);
         final KeyManagerFactory keyManagerFactory =
                         KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
-        keyManagerFactory.init(keystore, "abcdefghi".toCharArray());
+        keyManagerFactory.init(keystore, keystorePassword);
         return keyManagerFactory.getKeyManagers();
     }
 }
